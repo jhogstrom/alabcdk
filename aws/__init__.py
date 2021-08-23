@@ -162,7 +162,7 @@ class Bucket(aws_s3.Bucket):
         kwargs = get_params(locals())
 
         # Set the name to a standard
-        kwargs.setdefault("bucket_name", gen_name(scope, id))
+        kwargs.setdefault("bucket_name", gen_name(scope, id).lower())
 
         super().__init__(scope, id, **kwargs)
 

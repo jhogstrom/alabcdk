@@ -12,7 +12,7 @@ with open(path.join(here, "requirements.txt")) as f:
     deps = [l.strip() for l in f.readlines() if l.strip() != ""]
 
 setup(name='aws',
-    version='1.0.0.0',
+    version='1.0.0',
     description='Useful CDK constructs',
     # url='http://github.com/storborg/funniest',
     author='Jesper Högström',

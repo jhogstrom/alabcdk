@@ -14,7 +14,7 @@ with open(path.join(here, "requirements.txt")) as f:
 setup(name='aws',
     version='1.0.1',
     description='Useful CDK constructs',
-    # url='http://github.com/storborg/funniest',
+    url='https://github.com/aditrologistics/awscdk.git',
     author='Jesper Högström',
     author_email='jesper.hogstrom@aditrologistics.com',
     # license='MIT',

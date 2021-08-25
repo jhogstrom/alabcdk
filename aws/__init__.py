@@ -284,9 +284,11 @@ class PipLayers(core.Construct):
                 logging.debug(pipcommand)
                 logging.debug(open(requirements_file).readlines())
 
-                subprocess.check_output(
-                    pipcommand.split(),
-                    stderr=subprocess.DEVNULL)
+                try:
+                    subprocess.check_output(pipcommand.split())
+                except subprocess.CalledProcessError:
+                    print("oops")
+                    raise
 
                 self.remove_preinstalled_packages(preexisting_packages=preexisting_packages, root_dir=unpack_to_dir)
 

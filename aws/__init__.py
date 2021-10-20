@@ -312,8 +312,8 @@ class PipLayers(core.Construct):
                 with open(layer_unpack_dir / "md5sum", "w") as f:
                     f.write(req_md5)
 
-                if os.path.exists(tempfile):
-                    os.remove(tempfile)
+                if os.path.exists(tempname):
+                    os.remove(tempname)
             else:
                 print(f"Using cached layer image for {layer_id}.")
             code = aws_lambda.Code.from_asset(str(layer_unpack_dir))

@@ -276,13 +276,30 @@ class PipLayers(core.Construct):
                     prev_md5 = f.read()
 
             if req_md5 != prev_md5:
+                reqs = []
+                dev_package = False
+                with open(requirements_file) as f:
+                    for _ in f.read().splitlines():
+                        if _.startswith("-e "):
+                            reqs.append( _[3:])
+                            dev_package = True
+                        else:
+                            reqs.append(_)
+
+                tempname = requirements_file
+                if dev_package:
+                    tempname = tempfile.mktemp()
+                    with open(tempname, "w") as f:
+                        for _ in reqs:
+                            f.write(_ + "\n")
+
                 print(f"Installing {layer_id} to {unpack_to_dir}")
                 layer_unpack_dir.mkdir(parents=True, exist_ok=True)
                 # Extracting to a subdirectory 'python' as per
                 # https://docs.aws.amazon.com/lambda/latest/dg/configuration-layers.html
-                pipcommand = f'pip install -r {requirements_file} -t {unpack_to_dir} --quiet'
+                pipcommand = f'pip install -r {tempname} -t {unpack_to_dir} --quiet'
                 logging.debug(pipcommand)
-                logging.debug(open(requirements_file).readlines())
+                logging.debug(open(tempname).readlines())
 
                 try:
                     subprocess.check_output(pipcommand.split())
@@ -294,6 +311,9 @@ class PipLayers(core.Construct):
 
                 with open(layer_unpack_dir / "md5sum", "w") as f:
                     f.write(req_md5)
+
+                if os.path.exists(tempfile):
+                    os.remove(tempfile)
             else:
                 print(f"Using cached layer image for {layer_id}.")
             code = aws_lambda.Code.from_asset(str(layer_unpack_dir))

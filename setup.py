@@ -12,7 +12,7 @@ with open(path.join(here, "requirements.txt")) as f:
     deps = [l.strip() for l in f.readlines() if l.strip() != ""]
 
 setup(name='aws',
-    version='1.0.5',
+    version='1.0.6',
     description='Useful CDK constructs',
     url='https://github.com/aditrologistics/awscdk.git',
     author='Jesper Högström',

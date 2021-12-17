@@ -7,6 +7,7 @@ import shutil
 import glob
 import pathlib
 import hashlib
+from typing import Sequence
 from aws_cdk import (
     core,
     aws_dynamodb,
@@ -16,7 +17,10 @@ from aws_cdk import (
     aws_logs,
     aws_s3,
     aws_sqs,
-    aws_events_targets)
+    aws_events_targets,
+    aws_cloudfront,
+    aws_cloudfront_origins,
+    aws_certificatemanager)
 
 
 def gen_name(scope: core.Construct, id: str):
@@ -162,7 +166,7 @@ class Bucket(aws_s3.Bucket):
         kwargs = get_params(locals())
 
         # Set the name to a standard
-        kwargs.setdefault("bucket_name", gen_name(scope, id).lower())
+        kwargs.setdefault("bucket_name", gen_name(scope, id).lower().replace("_", "-"))
 
         super().__init__(scope, id, **kwargs)
 
@@ -281,7 +285,7 @@ class PipLayers(core.Construct):
                 with open(requirements_file) as f:
                     for _ in f.read().splitlines():
                         if _.startswith("-e "):
-                            reqs.append( _[3:])
+                            reqs.append(_[3:])
                             dev_package = True
                         else:
                             reqs.append(_)
@@ -336,7 +340,7 @@ class PipLayers(core.Construct):
         Get the size in bytes of all content under root_dir.
 
         :param root_dir: Directory node to check size of
-        :return: COntent under root_dir in bytes.
+        :return: Content under root_dir in bytes.
         """
         total_size = 0
         for path, dirs, files in os.walk(root_dir):
@@ -494,3 +498,123 @@ class ResourceWithLambda(core.Construct):
             f"{id}_url",
             value=f"{id}:: {self.resource.url} -- {verb}",
             description=f"url for {id}")
+
+
+class Website(core.Construct):
+    def __init__(
+            self,
+            scope: core.Construct,
+            id: str,
+            *,
+            index_document: str = None,
+            error_document: str = None,
+            cors_rules: Sequence[aws_s3.CorsRule] = None,
+            domain_names: Sequence[str] = None,
+            certificate: aws_certificatemanager.Certificate = None,
+            certificate_arn: str = None,
+            backend: aws_apigateway.IRestApi = None,
+            **kwargs) -> None:
+        """Create a bucket and a CDN in front of it. The CDN will be connected to a
+        certificate and domain_names if provided. Passing a backend will also add
+        the backend behind /api
+
+        Args:
+            scope (core.Construct): Scope of construct
+            id (str): id of construct
+            index_document (str, optional): Index document in the bucket. Defaults to "index.html" if not set.
+            error_document (str, optional): Error document in bucket. Defaults to index_document.
+            cors_rules (Sequence[aws_s3.CorsRule], optional): Cors rules for the bucket.
+            Defaults to GET/*/* if not set.
+            domain_names (Sequence[str], optional): Aliases for the CDN. Defaults to None.
+            certificate (aws_certificatemanager.Certificate, optional): Certificate for the CDN.
+            Defaults to None if certificate_arn is not set.
+            certificate_arn (str, optional): [description]. arn to an existing certificate.
+            backend (aws_apigateway.IRestApi, optional): Backend to include in the CDN. Defaults to None.
+
+        Raises:
+            ValueError: [description]
+        """
+        super().__init__(scope, f"{id}_website")
+
+        if all([certificate, certificate_arn]):
+            raise ValueError("You cannot pass values for both 'certificate' and 'certificate_arn'.")
+        kwargs = get_params(locals())
+        bucket_kwargs = filter_kwargs(kwargs, "bucket_")
+        cdn_kwargs = filter_kwargs(kwargs, "cdn_")
+
+        index_document = index_document or "index.html"
+        error_document = error_document or "index.html"
+        cors_rules = cors_rules or [aws_s3.CorsRule(
+                allowed_methods=[aws_s3.HttpMethods.GET],
+                allowed_headers=["*"],
+                allowed_origins=["*"])]
+
+        routing_rules = []
+        error_responses = []
+        for error_code in ["403", "404"]:
+            routing_rules.append(
+                aws_s3.RoutingRule(
+                    condition=aws_s3.RoutingRuleCondition(
+                        http_error_code_returned_equals=error_code,
+                    ),
+                    replace_key=aws_s3.ReplaceKey.prefix_with("#!")
+                )
+            )
+            error_responses.append(aws_cloudfront.CfnDistribution.CustomErrorResponseProperty(
+                        error_code=int(error_code),
+                        response_page_path="/index.html",
+                        response_code=200))
+
+        self.bucket = Bucket(
+            self,
+            f"{id}_bucket",
+            website_index_document=index_document,
+            website_error_document=error_document,
+            block_public_access=bucket_kwargs.pop("block_public_access", None) or None,
+            public_read_access=True,
+            website_routing_rules=routing_rules,
+            cors=cors_rules,
+            **bucket_kwargs)
+        self.bucket.grant_public_access()
+        core.CfnOutput(self, "S3WebUrl", value=self.bucket.bucket_website_url, )
+
+        if not certificate and certificate_arn:
+            certificate = aws_certificatemanager.Certificate.from_certificate_arn(
+                self,
+                f"{id}_certificate",
+                certificate_arn
+            )
+
+        self.distribution = aws_cloudfront.Distribution(
+            self,
+            f"{id}_distro",
+            comment=f"CDN for {id}",
+
+            default_behavior=aws_cloudfront.BehaviorOptions(
+                origin=aws_cloudfront_origins.S3Origin(self.bucket)
+            ),
+            price_class=aws_cloudfront.PriceClass.PRICE_CLASS_100,
+            domain_names=domain_names,
+            certificate=certificate,
+            default_root_object=index_document,
+            **cdn_kwargs
+        )
+        if backend:
+            self.distribution.add_behavior(
+                "/api/*",
+                origin=aws_cloudfront_origins.HttpOrigin(
+                    f"{backend.rest_api_id}.execute-api.{core.Stack.of(self).region}.amazonaws.com",
+                    origin_path=f"/{backend.deployment_stage.stage_name}"
+                ),
+                allowed_methods=aws_cloudfront.AllowedMethods.ALLOW_ALL,
+                cache_policy=aws_cloudfront.CachePolicy(
+                    self,
+                    f"{id}_api_cachepolicy",
+                    cookie_behavior=aws_cloudfront.CacheCookieBehavior.all(),
+                    query_string_behavior=aws_cloudfront.CacheQueryStringBehavior.all(),
+                    default_ttl=core.Duration.seconds(0),
+                    header_behavior=aws_cloudfront.CacheHeaderBehavior.allow_list("Authorization")
+                )
+            )
+
+        core.CfnOutput(self, "CDNUrl", value=self.distribution.distribution_domain_name)

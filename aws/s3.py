@@ -1,13 +1,13 @@
 from .utils import (gen_name, get_params)
+from constructs import Construct
 from aws_cdk import (
-    core as cdk,
     aws_s3)
 
 
 class Bucket(aws_s3.Bucket):
     def __init__(
             self,
-            scope: cdk.Construct,
+            scope: Construct,
             id: str,
             *,
             block_public_access=aws_s3.BlockPublicAccess.BLOCK_ALL,

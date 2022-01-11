@@ -1,7 +1,9 @@
 from typing import Sequence
 from .utils import (gen_name, get_params)
+from constructs import Construct
 from aws_cdk import (
-    core as cdk,
+    CfnOutput,
+    RemovalPolicy,
     aws_iam,
     aws_lambda,
     aws_dynamodb)
@@ -21,11 +23,11 @@ class Table(aws_dynamodb.Table):
             grantfunc(grantee)
             if isinstance(grantee, aws_lambda.Function):
                 grantee.add_environment(env_var_name, self.table_name)
-                cdk.CfnOutput(self, f"{env_var_name}", value=self.table_name)
+                # CfnOutput(self, f"{grantee.function_name}.{env_var_name}", value=self.table_name)
 
     def __init__(
             self,
-            scope: cdk.Construct,
+            scope: Construct,
             id: str,
             *,
             partition_key=aws_dynamodb.Attribute(
@@ -33,7 +35,7 @@ class Table(aws_dynamodb.Table):
                 type=aws_dynamodb.AttributeType.STRING
             ),
             point_in_time_recovery=True,
-            removal_policy=cdk.RemovalPolicy.RETAIN,
+            removal_policy=RemovalPolicy.RETAIN,
             readers: Sequence[aws_iam.IGrantable] = None,
             writers: Sequence[aws_iam.IGrantable] = None,
             readers_writers: Sequence[aws_iam.IGrantable] = None,

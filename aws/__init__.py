@@ -1,6 +1,9 @@
 from typing import Sequence
+from constructs import Construct
 from aws_cdk import (
-    core,
+    Stack,
+    Duration,
+    CfnOutput,
     aws_events,
     aws_apigateway,
     aws_lambda,
@@ -21,7 +24,7 @@ from .cloudfront import Website
 class Rule(aws_events.Rule):
     def __init__(
             self,
-            scope: core.Construct,
+            scope: Construct,
             id: str,
             target: aws_lambda.Function = None,
             **kwargs):
@@ -38,7 +41,7 @@ class Rule(aws_events.Rule):
 class RestApi(aws_apigateway.RestApi):
     def __init__(
             self,
-            scope: core.Construct,
+            scope: Construct,
             id: str,
             **kwargs):
         """
@@ -56,10 +59,10 @@ class RestApi(aws_apigateway.RestApi):
 
         super().__init__(scope, id, **kwargs)
 
-        core.CfnOutput(self, "root_url", value=f"ROOT_URL={self.url}")
+        CfnOutput(self, "root_url", value=f"ROOT_URL={self.url}")
 
 
-class ResourceWithLambda(core.Construct):
+class ResourceWithLambda(Construct):
     '''
     Construct that wraps the creation of a lambda function,
     optionally a resource and adds a method to the resource
@@ -67,7 +70,7 @@ class ResourceWithLambda(core.Construct):
     '''
     def __init__(
             self,
-            scope: core.Construct,
+            scope: Construct,
             id: str, *,
             parent_resource: aws_apigateway.IResource,
             code: aws_lambda.Code = None,
@@ -132,17 +135,17 @@ class ResourceWithLambda(core.Construct):
         else:
             self.resource = parent_resource
         self.method = self.resource.add_method(verb, self.integration, **method_kwargs)
-        core.CfnOutput(
+        CfnOutput(
             self,
             f"{id}_url",
             value=f"{id}:: {self.resource.url} -- {verb}",
             description=f"url for {id}")
 
 
-class WebsiteXX(core.Construct):
+class WebsiteXX(Construct):
     def __init__(
             self,
-            scope: core.Construct,
+            scope: Construct,
             id: str,
             *,
             index_document: str = None,
@@ -215,7 +218,7 @@ class WebsiteXX(core.Construct):
             cors=cors_rules,
             **bucket_kwargs)
         self.bucket.grant_public_access()
-        core.CfnOutput(self, "S3WebUrl", value=self.bucket.bucket_website_url, )
+        CfnOutput(self, "S3WebUrl", value=self.bucket.bucket_website_url, )
 
         if not certificate and certificate_arn:
             certificate = aws_certificatemanager.Certificate.from_certificate_arn(
@@ -242,7 +245,7 @@ class WebsiteXX(core.Construct):
             self.distribution.add_behavior(
                 "/api/*",
                 origin=aws_cloudfront_origins.HttpOrigin(
-                    f"{backend.rest_api_id}.execute-api.{core.Stack.of(self).region}.amazonaws.com",
+                    f"{backend.rest_api_id}.execute-api.{Stack.of(self).region}.amazonaws.com",
                     origin_path=f"/{backend.deployment_stage.stage_name}"
                 ),
                 allowed_methods=aws_cloudfront.AllowedMethods.ALLOW_ALL,
@@ -251,9 +254,9 @@ class WebsiteXX(core.Construct):
                     f"{id}_api_cachepolicy",
                     cookie_behavior=aws_cloudfront.CacheCookieBehavior.all(),
                     query_string_behavior=aws_cloudfront.CacheQueryStringBehavior.all(),
-                    default_ttl=core.Duration.seconds(0),
+                    default_ttl=Duration.seconds(0),
                     header_behavior=aws_cloudfront.CacheHeaderBehavior.allow_list("Authorization")
                 )
             )
 
-        core.CfnOutput(self, "CDNUrl", value=self.distribution.distribution_domain_name)
+        CfnOutput(self, "CDNUrl", value=self.distribution.distribution_domain_name)

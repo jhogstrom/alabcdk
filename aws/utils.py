@@ -1,9 +1,15 @@
 from inspect import signature
 import inspect
-import aws_cdk.core as cdk
+# import aws_cdk.core as cdk
+from aws_cdk import (
+    Duration,
+    Stack,
+)
+from constructs import Construct
 
-def gen_name(scope: cdk.Construct, id: str):
-    stack = cdk.Stack.of(scope)
+
+def gen_name(scope: Construct, id: str):
+    stack = Stack.of(scope)
     # stack = [_ for _ in scope.node.scopes if core.Stack.is_stack(_)][0]
     return f"{stack.stack_name}-{id}"
 

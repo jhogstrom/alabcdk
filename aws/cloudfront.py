@@ -1,7 +1,9 @@
 from typing import Sequence
+from constructs import Construct
 from aws_cdk import (
+    Duration,
+    CfnOutput,
     aws_iam,
-    core as cdk,
     aws_route53,
     aws_route53_targets,
     aws_certificatemanager,
@@ -13,10 +15,10 @@ from aws_cdk import (
 from .s3 import Bucket
 from .utils import (gen_name, get_params, filter_kwargs)
 
-class Website(cdk.Construct):
+class Website(Construct):
     def __init__(
             self,
-            scope: cdk.Construct,
+            scope: Construct,
             id: str,
             *,
             index_document: str = None,
@@ -57,7 +59,7 @@ class Website(cdk.Construct):
                 http_status=int(error_code),
                 response_page_path=f"/{index_document}",
                 response_http_status=200,
-                ttl=cdk.Duration.seconds(0)))
+                ttl=Duration.seconds(0)))
 
         # cors_rules = cors_rules or [aws_s3.CorsRule(
         #     allowed_methods=[aws_s3.HttpMethods.GET],
@@ -76,7 +78,7 @@ class Website(cdk.Construct):
 
         if not domain_name:
             self.bucket.grant_public_access()
-            cdk.CfnOutput(self, "S3WebUrl", value=self.bucket.bucket_website_url)
+            CfnOutput(self, "S3WebUrl", value=self.bucket.bucket_website_url)
             return
 
         hosted_zone = aws_route53.HostedZone.from_hosted_zone_attributes(
@@ -120,7 +122,7 @@ class Website(cdk.Construct):
 
             **cf_kwargs
         )
-        cdk.CfnOutput(self, "CDNUrl", value=self.distribution.distribution_domain_name)
+        CfnOutput(self, "CDNUrl", value=self.distribution.distribution_domain_name)
 
         aws_route53.ARecord(
             self,

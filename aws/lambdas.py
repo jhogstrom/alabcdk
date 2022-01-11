@@ -6,8 +6,9 @@ import logging
 import subprocess
 import shutil
 import glob
+from constructs import Construct
 from aws_cdk import (
-    core as cdk,
+    Duration,
     aws_lambda,
     aws_logs
 )
@@ -16,13 +17,13 @@ from .utils import (gen_name, get_params)
 class Function(aws_lambda.Function):
     def __init__(
             self,
-            scope: cdk.Construct,
+            scope: Construct,
             id: str,
             *,
             # code=aws_lambda.Code,
             runtime=aws_lambda.Runtime.PYTHON_3_8,
             log_retention=aws_logs.RetentionDays.FIVE_DAYS,
-            timeout=cdk.Duration.seconds(3),
+            timeout=Duration.seconds(3),
             **kwargs):
         kwargs = get_params(locals())
 
@@ -33,7 +34,7 @@ class Function(aws_lambda.Function):
         super().__init__(scope, id, **kwargs)
 
 
-class PipLayers(cdk.Construct):
+class PipLayers(Construct):
     def __init__(
             self,
             scope,

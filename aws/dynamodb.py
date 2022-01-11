@@ -1,8 +1,8 @@
 from typing import Sequence
-from .utils import (gen_name, get_params)
+from .utils import (gen_name, get_params, remove_params)
 from constructs import Construct
 from aws_cdk import (
-    CfnOutput,
+    # CfnOutput,
     RemovalPolicy,
     aws_iam,
     aws_lambda,
@@ -44,10 +44,11 @@ class Table(aws_dynamodb.Table):
         kwargs = get_params(locals())
 
         kwargs.setdefault('table_name', gen_name(scope, id))
-        kwargs.pop("env_var_name")
-        kwargs.pop("readers")
-        kwargs.pop("writers")
-        kwargs.pop("readers_writers")
+        remove_params(kwargs, ["env_var_name", "readers", "writers", "readers_writers"])
+        # kwargs.pop("env_var_name")
+        # kwargs.pop("readers")
+        # kwargs.pop("writers")
+        # kwargs.pop("readers_writers")
 
         super().__init__(scope, id, **kwargs)
         env_var_name = env_var_name or id

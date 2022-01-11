@@ -1,5 +1,6 @@
 from inspect import signature
 import inspect
+from typing import Sequence
 # import aws_cdk.core as cdk
 from aws_cdk import (
     Duration,
@@ -63,3 +64,6 @@ def filter_kwargs(kwargs: dict, filter: str) -> dict:
     {'abc': 'abc'}
     """
     return {k.replace(filter, "", 1): v for (k, v) in kwargs.items() if k.startswith(filter)}
+
+def remove_params(kwargs: dict, params: Sequence[str]):
+    [kwargs.pop(p) for p in params]

@@ -18,6 +18,7 @@ from .lambdas import Function, PipLayers
 from .dynamodb import Table
 from .sqs import Queue
 from .s3 import Bucket
+from .sns import Topic
 from .cloudfront import Website
 
 

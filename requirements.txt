@@ -50,5 +50,5 @@ aws-cdk-lib
 importlib-metadata
 importlib-resources
 zipp
-awscli
+#awscli
 boto3

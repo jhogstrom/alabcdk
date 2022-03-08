@@ -1,3 +1,4 @@
+
 from typing import Sequence
 from constructs import Construct
 from aws_cdk import (
@@ -20,6 +21,7 @@ from .sqs import Queue
 from .s3 import Bucket
 from .sns import Topic
 from .cloudfront import Website
+from .stack import AlabStack
 
 
 class Rule(aws_events.Rule):

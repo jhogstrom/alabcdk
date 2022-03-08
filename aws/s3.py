@@ -1,7 +1,9 @@
 from typing import Sequence
+from aws.stack import AlabStack
 from .utils import (gen_name, get_params, remove_params)
 from constructs import Construct
 from aws_cdk import (
+    Stack,
     aws_s3,
     aws_iam,
     aws_lambda)
@@ -36,7 +38,16 @@ class Bucket(aws_s3.Bucket):
         kwargs = get_params(locals())
 
         # Set the name to a standard
-        kwargs.setdefault("bucket_name", gen_name(scope, id).lower().replace("_", "-"))
+        bucket_name = gen_name(scope, id).lower().replace("_", "-")
+        stack = Stack.of(scope)
+        if isinstance(stack, AlabStack):
+            if stack.stage is not None:
+                bucket_name += "-" + stack.stage
+            if stack.stage != "PROD":
+                bucket_name += "-" + stack.user
+            bucket_name = bucket_name.lower()
+
+        kwargs.setdefault("bucket_name", bucket_name)
         remove_params(kwargs, ["env_var_name", "readers", "writers", "readers_writers"])
 
         super().__init__(scope, id, **kwargs)

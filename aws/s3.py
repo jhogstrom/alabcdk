@@ -1,7 +1,9 @@
 from typing import Sequence
+from aws.stack import AlabStack
 from .utils import (gen_name, get_params, remove_params)
 from constructs import Construct
 from aws_cdk import (
+    Stack,
     aws_s3,
     aws_iam,
     aws_lambda)

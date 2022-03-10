@@ -5,6 +5,7 @@ from aws_cdk import (
     aws_s3,
     aws_iam,
     aws_lambda)
+import aws_cdk as cdk
 
 
 class Bucket(aws_s3.Bucket):
@@ -36,10 +37,13 @@ class Bucket(aws_s3.Bucket):
         kwargs = get_params(locals())
 
         # Set the name to a standard
-        kwargs.setdefault("bucket_name", gen_name(scope, id).lower().replace("_", "-"))
+        bucket_name = gen_name(scope, id, globalize=True, all_lower=True, clean_string=True)
+
+        kwargs.setdefault("bucket_name", bucket_name)
         remove_params(kwargs, ["env_var_name", "readers", "writers", "readers_writers"])
 
         super().__init__(scope, id, **kwargs)
+        cdk.CfnOutput(self, f"{id}", value=self.bucket_name)
 
         env_var_name = env_var_name or id
         self.grant_access(

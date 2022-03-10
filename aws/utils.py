@@ -9,10 +9,29 @@ from aws_cdk import (
 from constructs import Construct
 
 
-def gen_name(scope: Construct, id: str):
+def gen_name(
+        scope: Construct,
+        id: str,
+        *,
+        globalize: bool = False,
+        all_lower: bool = False,
+        clean_string: bool = False):
     stack = Stack.of(scope)
-    # stack = [_ for _ in scope.node.scopes if core.Stack.is_stack(_)][0]
-    return f"{stack.stack_name}-{id}"
+    result = f"{stack.stack_name}-{id}"
+
+    if globalize and hasattr(stack, "stage"):
+        if stack.stage is not None:
+            result += "-" + stack.stage
+        if stack.stage != "PROD":
+            result += "-" + stack.user
+
+    if all_lower:
+        result = result.lower()
+
+    if clean_string:
+        result = result.replace("_", "-")
+
+    return result
 
 
 def get_params(allvars: dict) -> dict:

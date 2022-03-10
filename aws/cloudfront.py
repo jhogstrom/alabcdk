@@ -76,9 +76,9 @@ class Website(Construct):
             public_read_access=public_read_access,
             **s3_kwargs)
 
+        CfnOutput(self, "S3WebUrl", value=self.bucket.bucket_website_url)
         if not domain_name:
             self.bucket.grant_public_access()
-            CfnOutput(self, "S3WebUrl", value=self.bucket.bucket_website_url)
             return
 
         hosted_zone = aws_route53.HostedZone.from_hosted_zone_attributes(
@@ -119,10 +119,10 @@ class Website(Construct):
             domain_names=[domain_name],
             error_responses=error_responses,
             certificate=certificate,
-
             **cf_kwargs
         )
         CfnOutput(self, "CDNUrl", value=self.distribution.distribution_domain_name)
+        CfnOutput(self, "CDN_ID", value=self.distribution.distribution_id)
 
         aws_route53.ARecord(
             self,

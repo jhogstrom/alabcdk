@@ -29,7 +29,7 @@ class Function(aws_lambda.Function):
 
         kwargs.setdefault('function_name', gen_name(scope, id))
         kwargs.setdefault("handler", f"{id}.main")
-        kwargs.setdefault("code", aws_lambda.Code.from_asset(id))
+        kwargs.setdefault("code", aws_lambda.Code.from_asset(id, exclude=[".env*"]))
 
         super().__init__(scope, id, **kwargs)
 

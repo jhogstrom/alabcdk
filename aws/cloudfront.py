@@ -2,7 +2,6 @@ from typing import Sequence
 from constructs import Construct
 from aws_cdk import (
     Duration,
-    CfnOutput,
     aws_iam,
     aws_route53,
     aws_route53_targets,
@@ -13,7 +12,7 @@ from aws_cdk import (
     aws_s3,
 )
 from .s3 import Bucket
-from .utils import (gen_name, get_params, filter_kwargs)
+from .utils import (gen_name, get_params, filter_kwargs, generate_output)
 
 class Website(Construct):
     def __init__(
@@ -76,7 +75,7 @@ class Website(Construct):
             public_read_access=public_read_access,
             **s3_kwargs)
 
-        CfnOutput(self, "S3WebUrl", value=self.bucket.bucket_website_url)
+        generate_output(self, f"{id}_url", self.bucket.bucket_website_url)
         if not domain_name:
             self.bucket.grant_public_access()
             return
@@ -121,8 +120,8 @@ class Website(Construct):
             certificate=certificate,
             **cf_kwargs
         )
-        CfnOutput(self, "CDNUrl", value=self.distribution.distribution_domain_name)
-        CfnOutput(self, "CDN_ID", value=self.distribution.distribution_id)
+        generate_output(self, "CDNUrl", self.distribution.distribution_domain_name)
+        generate_output(self, "CDN_ID", self.distribution.distribution_id)
 
         aws_route53.ARecord(
             self,

@@ -1,5 +1,5 @@
 from typing import Sequence, List
-from .utils import (gen_name)
+from .utils import (gen_name, generate_output)
 from constructs import Construct
 from aws_cdk import (
     aws_sns,
@@ -43,4 +43,4 @@ class Topic(aws_sns.Topic):
 
         self.update_environment(env_var_name, subscribers)
         self.update_environment(env_var_name, publishers)
-        cdk.CfnOutput(self, f"{env_var_name}", value=self.topic_arn)
+        generate_output(self, env_var_name, self.topic_arn)

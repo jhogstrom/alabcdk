@@ -1,9 +1,7 @@
 from typing import Sequence
-from .utils import (gen_name, get_params, remove_params)
+from .utils import (gen_name, get_params, remove_params, stage_based_removal_policy, generate_output)
 from constructs import Construct
 from aws_cdk import (
-    # CfnOutput,
-    RemovalPolicy,
     aws_iam,
     aws_lambda,
     aws_dynamodb)
@@ -23,7 +21,6 @@ class Table(aws_dynamodb.Table):
             grantfunc(grantee)
             if isinstance(grantee, aws_lambda.Function):
                 grantee.add_environment(env_var_name, self.table_name)
-                # CfnOutput(self, f"{grantee.function_name}.{env_var_name}", value=self.table_name)
 
     def __init__(
             self,
@@ -35,7 +32,6 @@ class Table(aws_dynamodb.Table):
                 type=aws_dynamodb.AttributeType.STRING
             ),
             point_in_time_recovery=True,
-            removal_policy=RemovalPolicy.RETAIN,
             readers: Sequence[aws_iam.IGrantable] = None,
             writers: Sequence[aws_iam.IGrantable] = None,
             readers_writers: Sequence[aws_iam.IGrantable] = None,
@@ -44,6 +40,7 @@ class Table(aws_dynamodb.Table):
         kwargs = get_params(locals())
 
         kwargs.setdefault('table_name', gen_name(scope, id))
+        kwargs.setdefault("removal_policy", stage_based_removal_policy(scope))
         remove_params(kwargs, ["env_var_name", "readers", "writers", "readers_writers"])
         # kwargs.pop("env_var_name")
         # kwargs.pop("readers")
@@ -52,6 +49,7 @@ class Table(aws_dynamodb.Table):
 
         super().__init__(scope, id, **kwargs)
         env_var_name = env_var_name or id
+        generate_output(self, env_var_name, self.table_name)
         self.grant_access(
             grantees=readers or [],
             grantfunc=self.grant_read_data,

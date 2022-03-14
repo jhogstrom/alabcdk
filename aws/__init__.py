@@ -14,7 +14,7 @@ from aws_cdk import (
     aws_cloudfront_origins,
     aws_certificatemanager)
 
-from .utils import (gen_name, get_params, filter_kwargs)
+from .utils import (gen_name, get_params, filter_kwargs, generate_output)
 from .lambdas import Function, PipLayers
 from .dynamodb import Table
 from .sqs import Queue
@@ -62,7 +62,7 @@ class RestApi(aws_apigateway.RestApi):
 
         super().__init__(scope, id, **kwargs)
 
-        CfnOutput(self, "root_url", value=f"ROOT_URL={self.url}")
+        generate_output(self, id, self.url)
 
 
 class ResourceWithLambda(Construct):

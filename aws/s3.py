@@ -1,6 +1,11 @@
 from typing import Sequence
 from aws.stack import AlabStack
-from .utils import (gen_name, get_params, remove_params)
+from .utils import (
+    gen_name,
+    get_params,
+    remove_params,
+    stage_based_removal_policy,
+    generate_output)
 from constructs import Construct
 from aws_cdk import (
     Stack,
@@ -42,12 +47,13 @@ class Bucket(aws_s3.Bucket):
         bucket_name = gen_name(scope, id, globalize=True, all_lower=True, clean_string=True)
 
         kwargs.setdefault("bucket_name", bucket_name)
+        kwargs.setdefault("removal_policy", stage_based_removal_policy(scope))
         remove_params(kwargs, ["env_var_name", "readers", "writers", "readers_writers"])
 
         super().__init__(scope, id, **kwargs)
-        cdk.CfnOutput(self, f"{id}", value=self.bucket_name)
-
         env_var_name = env_var_name or id
+        generate_output(self, env_var_name, self.bucket_name)
+
         self.grant_access(
             grantees=readers or [],
             grantfunc=self.grant_read,

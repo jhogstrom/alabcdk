@@ -4,9 +4,11 @@ from typing import Sequence
 # import aws_cdk.core as cdk
 from aws_cdk import (
     Duration,
-    Stack,
+    Stack
 )
+import aws_cdk as cdk
 from constructs import Construct
+import uuid
 
 
 def gen_name(
@@ -22,8 +24,8 @@ def gen_name(
     if globalize and hasattr(stack, "stage"):
         if stack.stage is not None:
             result += "-" + stack.stage
-        if stack.stage != "PROD":
-            result += "-" + stack.user
+        # if stack.stage != "PROD":
+        #     result += "-" + stack.user
 
     if all_lower:
         result = result.lower()
@@ -32,6 +34,18 @@ def gen_name(
         result = result.replace("_", "-").replace(".", "-")
 
     return result
+
+
+def generate_output(scope, name: str, value):
+    cdk.CfnOutput(scope, "X"+str(uuid.uuid4()), value=f"{name}={value}")
+
+
+def stage_based_removal_policy(scope) -> cdk.RemovalPolicy:
+    stack = Stack.of(scope)
+    if hasattr(stack, "stage"):
+        if stack.stage == "PROD":
+            return cdk.RemovalPolicy.RETAIN
+    return cdk.RemovalPolicy.DESTROY
 
 
 def get_params(allvars: dict) -> dict:

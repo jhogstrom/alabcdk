@@ -29,7 +29,7 @@ def gen_name(
         result = result.lower()
 
     if clean_string:
-        result = result.replace("_", "-")
+        result = result.replace("_", "-").replace(".", "-")
 
     return result
 

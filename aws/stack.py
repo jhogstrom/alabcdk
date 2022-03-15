@@ -1,4 +1,4 @@
-from .utils import (gen_name, get_params)
+from .utils import (gen_name, get_params, generate_output)
 from constructs import Construct
 from aws_cdk import (
     Stack)
@@ -13,8 +13,11 @@ class AlabStack(Stack):
             user: str = None,
             **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
-        self.stage = stage
-        self.user = user
+        self.stage = stage or "DEV"
+        self.user = user or "None"
+        generate_output(self, "STAGE", self.stage)
+        generate_output(self, "USER", self.user)
+
 
     @property
     def hosted_zone(self):

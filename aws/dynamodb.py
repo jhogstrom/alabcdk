@@ -1,5 +1,10 @@
 from typing import Sequence
-from .utils import (gen_name, get_params, remove_params, stage_based_removal_policy, generate_output)
+from .utils import (
+    gen_name,
+    get_params,
+    remove_params,
+    stage_based_removal_policy,
+    generate_output)
 from constructs import Construct
 from aws_cdk import (
     aws_iam,

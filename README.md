@@ -9,7 +9,7 @@ git+https://github.com/aditrologistics/awscdk.git
 
 You should always use a **virtual environment**.
 ```
-python -m venv .env
+python -m venv .venv
 ```
 
 

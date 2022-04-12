@@ -11,10 +11,10 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 with open(path.join(here, "requirements.txt")) as f:
     deps = [l.strip() for l in f.readlines() if l.strip() != ""]
 
-setup(name='aws',
-    version='1.0.15',
+setup(name='alabcdk',
+    version='1.1.2',
     description='Useful CDK constructs',
-    url='https://github.com/aditrologistics/awscdk.git',
+    url='https://github.com/aditrologistics/alabcdk.git',
     author='Jesper Högström',
     author_email='jesper.hogstrom@aditrologistics.com',
     # license='MIT',

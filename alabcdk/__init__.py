@@ -22,6 +22,7 @@ from .s3 import Bucket
 from .sns import Topic
 from .cloudfront import Website
 from .stack import AlabStack
+from .ssm import StringParameter
 
 
 class Rule(aws_events.Rule):

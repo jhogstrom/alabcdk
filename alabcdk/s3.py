@@ -1,5 +1,5 @@
 from typing import Sequence
-from aws.stack import AlabStack
+from alabcdk.stack import AlabStack
 from .utils import (
     gen_name,
     get_params,

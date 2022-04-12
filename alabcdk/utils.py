@@ -99,4 +99,14 @@ def filter_kwargs(kwargs: dict, filter: str) -> dict:
     return {k.replace(filter, "", 1): v for (k, v) in kwargs.items() if k.startswith(filter)}
 
 def remove_params(kwargs: dict, params: Sequence[str]):
+    """
+    Remove entries from a dictionary
+
+    Will yield KeyError if an entry in params is not in kwargs,
+    but that is a good thing and indicates a coding error.
+
+    Args:
+        kwargs (dict): Dictionary from which to remove entries.
+        params (Sequence[str]): Entries to remove
+    """
     [kwargs.pop(p) for p in params]

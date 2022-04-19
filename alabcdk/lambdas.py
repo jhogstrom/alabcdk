@@ -6,6 +6,7 @@ import logging
 import subprocess
 import shutil
 import glob
+from typing import Optional
 from constructs import Construct
 from aws_cdk import (
     Duration,
@@ -35,6 +36,11 @@ class Function(aws_lambda.Function):
 
         for k, v in kwargs.get("environment", {}).items():
             generate_output(self, k, v)
+
+    def add_environment(self, key: str, value: str, *, remove_in_edge: Optional[bool] = None) -> "Function":
+        generate_output(self, key, value)
+        return super().add_environment(key, value, remove_in_edge=remove_in_edge)
+
 
 
 class PipLayers(Construct):

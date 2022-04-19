@@ -12,7 +12,7 @@ with open(path.join(here, "requirements.txt")) as f:
     deps = [l.strip() for l in f.readlines() if l.strip() != ""]
 
 setup(name='alabcdk',
-    version='1.1.3',
+    version='1.1.4',
     description='Useful CDK constructs',
     url='https://github.com/aditrologistics/alabcdk.git',
     author='Jesper Högström',

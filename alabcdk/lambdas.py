@@ -12,7 +12,7 @@ from aws_cdk import (
     aws_lambda,
     aws_logs
 )
-from .utils import (gen_name, get_params)
+from .utils import (gen_name, get_params, generate_output)
 
 class Function(aws_lambda.Function):
     def __init__(
@@ -32,6 +32,9 @@ class Function(aws_lambda.Function):
         kwargs.setdefault("code", aws_lambda.Code.from_asset(id, exclude=[".env*"]))
 
         super().__init__(scope, id, **kwargs)
+
+        for k, v in kwargs.get("environment", {}).items():
+            generate_output(self, k, v)
 
 
 class PipLayers(Construct):

@@ -1,7 +1,8 @@
-from .utils import (gen_name, get_params, generate_output)
+from .utils import (generate_output)
 from constructs import Construct
 from aws_cdk import (
     Stack)
+
 
 class AlabStack(Stack):
     def __init__(
@@ -17,7 +18,6 @@ class AlabStack(Stack):
         self.user = user or "None"
         generate_output(self, "STAGE", self.stage)
         generate_output(self, "USER", self.user)
-
 
     @property
     def hosted_zone(self):

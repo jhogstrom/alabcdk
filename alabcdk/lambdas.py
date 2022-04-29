@@ -15,7 +15,21 @@ from aws_cdk import (
 )
 from .utils import (gen_name, get_params, generate_output)
 
+
+_stage_to_loglevel = {
+    "PROD": "INFO",
+    "TEST": "DEBUG",
+    "DEV": "DEBUG"
+}
+
+_DEFAULT_LOGLEVEL = "DEBUG"
 class Function(aws_lambda.Function):
+    def _loglevel_for_stage(self) -> str:
+        stage = "DEV"
+        if hasattr(self.stack, "stage"):
+            stage = self.stack.stage
+        return _stage_to_loglevel.get(stage, _DEFAULT_LOGLEVEL)
+
     def __init__(
             self,
             scope: Construct,
@@ -36,6 +50,8 @@ class Function(aws_lambda.Function):
 
         for k, v in kwargs.get("environment", {}).items():
             generate_output(self, k, v)
+
+        self.add_environment("LOGLEVEL", self._loglevel_for_stage())
 
     def add_environment(self, key: str, value: str, *, remove_in_edge: Optional[bool] = None) -> "Function":
         generate_output(self, key, value)

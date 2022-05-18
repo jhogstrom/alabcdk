@@ -22,6 +22,7 @@ _stage_to_loglevel = {
     "DEV": "DEBUG"
 }
 
+
 _DEFAULT_LOGLEVEL = "DEBUG"
 class Function(aws_lambda.Function):
     def _loglevel_for_stage(self) -> str:
@@ -36,7 +37,7 @@ class Function(aws_lambda.Function):
             id: str,
             *,
             # code=aws_lambda.Code,
-            runtime=aws_lambda.Runtime.PYTHON_3_8,
+            runtime=aws_lambda.Runtime.PYTHON_3_9,
             log_retention=aws_logs.RetentionDays.FIVE_DAYS,
             timeout=Duration.seconds(3),
             **kwargs):
@@ -58,14 +59,13 @@ class Function(aws_lambda.Function):
         return super().add_environment(key, value, remove_in_edge=remove_in_edge)
 
 
-
 class PipLayers(Construct):
     def __init__(
             self,
             scope,
             id, *,
             layers: dict,
-            compatible_runtimes = None,
+            compatible_runtimes=None,
             unpack_dir: str = None,
             **kwargs):
         """
@@ -119,9 +119,9 @@ class PipLayers(Construct):
         super().__init__(scope, id)
         if not compatible_runtimes:
             compatible_runtimes = [
-                aws_lambda.Runtime.PYTHON_3_6,
                 aws_lambda.Runtime.PYTHON_3_7,
-                aws_lambda.Runtime.PYTHON_3_8]
+                aws_lambda.Runtime.PYTHON_3_8,
+                aws_lambda.Runtime.PYTHON_3_9]
 
         if unpack_dir:
             unpack_dir = pathlib.Path(unpack_dir)

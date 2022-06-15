@@ -38,7 +38,7 @@ class Function(aws_lambda.Function):
             id: str,
             *,
             # code=aws_lambda.Code,
-            runtime=aws_lambda.Runtime.PYTHON_3_9,
+            runtime=aws_lambda.Runtime.PYTHON_3_8,
             log_retention=aws_logs.RetentionDays.FIVE_DAYS,
             timeout=Duration.seconds(3),
             **kwargs):

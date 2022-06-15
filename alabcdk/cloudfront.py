@@ -1,4 +1,3 @@
-from typing import Sequence
 from constructs import Construct
 from aws_cdk import (
     Duration,
@@ -6,13 +5,13 @@ from aws_cdk import (
     aws_route53,
     aws_route53_targets,
     aws_certificatemanager,
-    aws_apigateway,
     aws_cloudfront,
     aws_cloudfront_origins,
     aws_s3,
 )
 from .s3 import Bucket
 from .utils import (gen_name, get_params, filter_kwargs, generate_output)
+
 
 class Website(Construct):
     def __init__(
@@ -38,7 +37,6 @@ class Website(Construct):
         cf_kwargs.setdefault("price_class", aws_cloudfront.PriceClass.PRICE_CLASS_100)
         cf_kwargs.setdefault("comment", f"CDN for {id}/{gen_name(self, 'distro')}")
         cf_kwargs.setdefault("default_root_object", f"{index_document}")
-
 
         if domain_name and not hosted_zone_id:
             raise ValueError("If 'domain_name' is set, you also need to set 'hosted_zone_id'.")
@@ -100,7 +98,7 @@ class Website(Construct):
             gen_name(self, "cf_oai"),
             comment=f"Origin Access Identity for {gen_name(self, id)}.")
 
-        statement=aws_iam.PolicyStatement(
+        statement = aws_iam.PolicyStatement(
             resources=[self.bucket.arn_for_objects('*')],
             actions=["s3:GetObject"],
             principals=[aws_iam.CanonicalUserPrincipal(oai.cloud_front_origin_access_identity_s3_canonical_user_id)])

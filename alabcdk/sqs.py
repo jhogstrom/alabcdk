@@ -1,4 +1,4 @@
-from .utils import (gen_name, get_params)
+from .utils import (gen_name)
 from constructs import Construct
 from aws_cdk import (
     aws_sqs)

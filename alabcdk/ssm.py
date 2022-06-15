@@ -8,6 +8,7 @@ from aws_cdk import (
 import aws_cdk as cdk
 from .utils import (gen_name, get_params, generate_output, remove_params)
 
+
 class StringParameter(aws_ssm.StringParameter):
     def __init__(
             self,

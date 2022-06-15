@@ -2,7 +2,6 @@ import pathlib
 import hashlib
 import os
 import tempfile
-import logging
 import subprocess
 import shutil
 import glob
@@ -24,6 +23,8 @@ _stage_to_loglevel = {
 
 
 _DEFAULT_LAMBDA_LOGLEVEL = "DEBUG"
+
+
 class Function(aws_lambda.Function):
     def _loglevel_for_stage(self) -> str:
         stage = "DEV"
@@ -178,7 +179,6 @@ class PipLayers(Construct):
 
             if req_md5 != prev_md5:
                 preexisting_packages = preexisting_packages or self.get_preinstalled_packages(compatible_runtimes)
-
 
                 tempname = self.cleaned_requirements(requirements_file)
 

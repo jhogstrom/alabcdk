@@ -1,19 +1,17 @@
-from inspect import signature
-import inspect
-from typing import Sequence
-# import aws_cdk.core as cdk
-from aws_cdk import (
-    Duration,
-    Stack
-)
-import aws_cdk as cdk
-from constructs import Construct
+import sys
+import os
 import uuid
 import logging
-import os
-import sys
+from inspect import signature
+from typing import Sequence
+import aws_cdk as cdk
+from constructs import Construct
+from aws_cdk import (
+    Stack
+)
 
 _DEFAULT_LOGLEVEL = "INFO"
+
 
 def gen_name(
         scope: Construct,
@@ -102,6 +100,7 @@ def filter_kwargs(kwargs: dict, filter: str) -> dict:
     """
     return {k.replace(filter, "", 1): v for (k, v) in kwargs.items() if k.startswith(filter)}
 
+
 def remove_params(kwargs: dict, params: Sequence[str]):
     """
     Remove entries from a dictionary
@@ -114,6 +113,7 @@ def remove_params(kwargs: dict, params: Sequence[str]):
         params (Sequence[str]): Entries to remove
     """
     [kwargs.pop(p) for p in params]
+
 
 def setup_logger(
         *,

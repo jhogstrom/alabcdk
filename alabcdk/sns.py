@@ -6,7 +6,6 @@ from aws_cdk import (
     aws_sns_subscriptions,
     aws_iam,
     aws_lambda)
-import aws_cdk as cdk
 
 
 class Topic(aws_sns.Topic):

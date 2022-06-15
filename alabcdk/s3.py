@@ -1,5 +1,4 @@
 from typing import Sequence
-from alabcdk.stack import AlabStack
 from .utils import (
     gen_name,
     get_params,
@@ -8,11 +7,9 @@ from .utils import (
     generate_output)
 from constructs import Construct
 from aws_cdk import (
-    Stack,
     aws_s3,
     aws_iam,
     aws_lambda)
-import aws_cdk as cdk
 
 
 class Bucket(aws_s3.Bucket):

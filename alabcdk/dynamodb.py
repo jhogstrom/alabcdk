@@ -10,6 +10,8 @@ from aws_cdk import (
     aws_iam,
     aws_lambda,
     aws_dynamodb)
+
+
 class Table(aws_dynamodb.Table):
     """
     Creates a DynamoDB table with CDK.

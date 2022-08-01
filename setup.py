@@ -9,11 +9,11 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 with open(path.join(here, "requirements.txt")) as f:
-    deps = [l.strip() for l in f.readlines() if l.strip() != ""]
+    deps = [_.strip() for _ in f.readlines() if _.strip() != ""]
 
 setup(
     name='alabcdk',
-    version='1.1.9',
+    version='1.1.10',
     description='Useful CDK constructs',
     url='https://github.com/aditrologistics/alabcdk.git',
     author='Jesper Högström',

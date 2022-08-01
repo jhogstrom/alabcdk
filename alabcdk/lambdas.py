@@ -36,17 +36,15 @@ class Function(aws_lambda.Function):
             self,
             scope: Construct,
             id: str,
-            *,
-            # code=aws_lambda.Code,
-            runtime=aws_lambda.Runtime.PYTHON_3_8,
-            log_retention=aws_logs.RetentionDays.FIVE_DAYS,
-            timeout=Duration.seconds(3),
             **kwargs):
         kwargs = get_params(locals())
 
         kwargs.setdefault('function_name', gen_name(scope, id))
         kwargs.setdefault("handler", f"{id}.main")
         kwargs.setdefault("code", aws_lambda.Code.from_asset(id, exclude=[".env*"]))
+        kwargs.setdefault("runtime", aws_lambda.Runtime.PYTHON_3_8)
+        kwargs.setdefault("timeout", Duration.seconds(3))
+        kwargs.setdefault("log_retention", aws_logs.RetentionDays.FIVE_DAYS)
 
         super().__init__(scope, id, **kwargs)
 

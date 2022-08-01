@@ -22,6 +22,7 @@ class Website(Construct):
             index_document: str = None,
             error_document: str = None,
             # cors_rules: Sequence[aws_s3.CorsRule] = None,
+            certificate: aws_certificatemanager.Certificate = None,
             domain_name: str = None,
             hosted_zone_id: str = None,
             # backend: aws_apigateway.IRestApi = None,
@@ -78,19 +79,19 @@ class Website(Construct):
             self.bucket.grant_public_access()
             return
 
-        hosted_zone = aws_route53.HostedZone.from_hosted_zone_attributes(
+        self.hosted_zone = aws_route53.HostedZone.from_hosted_zone_attributes(
             self,
             gen_name(self, "hosted_zone"),
             hosted_zone_id=hosted_zone_id,
             zone_name=domain_name
         )
 
-        certificate = aws_certificatemanager.DnsValidatedCertificate(
+        self.certificate = certificate or aws_certificatemanager.DnsValidatedCertificate(
             self,
             gen_name(self, "cert"),
-            hosted_zone=hosted_zone,
+            hosted_zone=self.hosted_zone,
             domain_name=domain_name,
-            region="us-east-1"
+            region="us-east-1",
             )
 
         oai = aws_cloudfront.OriginAccessIdentity(
@@ -115,21 +116,21 @@ class Website(Construct):
             ),
             domain_names=[domain_name],
             error_responses=error_responses,
-            certificate=certificate,
+            certificate=self.certificate,
             **cf_kwargs
         )
         generate_output(self, "CDNUrl", self.distribution.distribution_domain_name)
         generate_output(self, "CDN_ID", self.distribution.distribution_id)
 
-        aws_route53.ARecord(
+        self.cloudfront_alias = aws_route53.ARecord(
             self,
             "CDN_ARecord",
-            zone=hosted_zone,
+            zone=self.hosted_zone,
             target=aws_route53.RecordTarget.from_alias(
                 aws_route53_targets.CloudFrontTarget(self.distribution)))
         aws_route53.AaaaRecord(
             self,
             "CDN_AliasRecord",
-            zone=hosted_zone,
+            zone=self.hosted_zone,
             target=aws_route53.RecordTarget.from_alias(
                 aws_route53_targets.CloudFrontTarget(self.distribution)))

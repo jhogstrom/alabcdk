@@ -15,14 +15,14 @@ from aws_cdk import (
     aws_certificatemanager)
 
 from .utils import (gen_name, get_params, filter_kwargs, generate_output)
-from .lambdas import Function, PipLayers
-from .dynamodb import Table
-from .sqs import Queue
-from .s3 import Bucket
-from .sns import Topic
-from .cloudfront import Website
-from .stack import AlabStack
-from .ssm import StringParameter
+from .lambdas import Function, PipLayers  # noqa401
+from .dynamodb import Table  # noqa401
+from .sqs import Queue  # noqa401
+from .s3 import Bucket  # noqa401
+from .sns import Topic  # noqa401
+from .cloudfront import Website  # noqa401
+from .stack import AlabStack  # noqa401
+from .ssm import StringParameter  # noqa401
 
 
 class Rule(aws_events.Rule):

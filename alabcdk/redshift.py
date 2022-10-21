@@ -172,7 +172,7 @@ class RedshiftServerless(RedshiftBase):
             enable_dns_hostnames=True,
             subnet_configuration=[
                 aws_ec2.SubnetConfiguration(
-                    name="public", cidr_mask=24, subnet_type=aws_ec2.SubnetType.PUBLIC
+                    name="private", cidr_mask=24, subnet_type=aws_ec2.SubnetType.PRIVATE_ISOLATED
                 ),
             ]
         )

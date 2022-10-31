@@ -71,8 +71,8 @@ def get_params(allvars: dict) -> dict:
     :param locals: Dictionary with local variables
     :return: Combined dictionary
     """
-    assert(allvars.get("self"))
-    assert("kwargs" in allvars)
+    assert (allvars.get("self"))
+    assert ("kwargs" in allvars)
     kwargs = allvars.get("kwargs")
     kwargs = kwargs or {}
     cls = type(allvars["self"])

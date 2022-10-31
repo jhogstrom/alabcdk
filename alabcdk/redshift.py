@@ -202,7 +202,7 @@ class RedshiftServerless(RedshiftBase):
             iam_roles=[self.redshift_role.role_arn],
         )
 
-        pub_subnets = [subnet.subnet_id for subnet in self.vpc.public_subnets]
+        isolated_subnets = [subnet.subnet_id for subnet in self.vpc.isolated_subnets]
 
         self.redshift_workgroup = aws_redshiftserverless.CfnWorkgroup(
             self,
@@ -211,7 +211,9 @@ class RedshiftServerless(RedshiftBase):
             base_capacity=base_capacity,
             enhanced_vpc_routing=False,
             namespace_name=self.redshift_namespace.namespace_name,
-            publicly_accessible=True,
+            publicly_accessible=False,
             security_group_ids=[self.security_group.security_group_id],
-            subnet_ids=pub_subnets,
+            subnet_ids=isolated_subnets,
         )
+
+        self.redshift_workgroup.add_depends_on(self.redshift_namespace)

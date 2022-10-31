@@ -59,11 +59,12 @@ class RedshiftBase(Construct):
 
         result = self.define_vpc()
         result.apply_removal_policy(cdk.RemovalPolicy.DESTROY)
+        return result
 
     def define_vpc(self):
         raise NotImplementedError()
 
-    def define_security_group(self, ingress_peers: list[str]):
+    def define_security_group(self, ingress_peers: list[str] = []):
         # Create Security Group for Redshift
         result = aws_ec2.SecurityGroup(
             self,

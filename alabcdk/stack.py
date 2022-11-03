@@ -42,15 +42,19 @@ class AlabStack(Stack):
             *,
             stage: str = None,
             user: str = None,
+            domain_name: str = None,
+            hosted_zone: str = None,
             add_git_info: bool = True,
             **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         self.stage = stage or "DEV"
         self.user = user or "None"
+        self.domain_name = domain_name
+        self.hosted_zone = hosted_zone
         self.add_deploy_info(add_git_info)
 
     @property
-    def hosted_zone(self):
+    def _hosted_zone(self):
         res = self.node.try_get_context("hosted_zone")
         if res is None:
             raise ValueError("'hosted_zone' must be added to the context.")
@@ -75,5 +79,5 @@ class AlabStack(Stack):
         return self.node.try_get_context("BASEDOMAIN") or "aditrologistics.nu"
 
     @property
-    def domain_name(self):
+    def _domain_name(self):
         return f"{self.subdomain}.{self.base_domain}"

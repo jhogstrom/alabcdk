@@ -9,6 +9,7 @@ from aws_cdk import (
     aws_redshift,
     aws_redshiftserverless
 )
+from typing import List
 
 from .utils import (gen_name)
 from .aws_cloud_resources import (redshift_port_number)
@@ -64,7 +65,7 @@ class RedshiftBase(Construct):
     def define_vpc(self):
         raise NotImplementedError()
 
-    def define_security_group(self, ingress_peers: list[str] = []):
+    def define_security_group(self, ingress_peers: List[str] = []):
         # Create Security Group for Redshift
         result = aws_ec2.SecurityGroup(
             self,

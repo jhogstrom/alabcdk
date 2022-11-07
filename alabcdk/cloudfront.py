@@ -26,11 +26,13 @@ class Website(Construct):
             domain_name: str = None,
             hosted_zone_id: str = None,
             # backend: aws_apigateway.IRestApi = None,
+            web_bucket_name: str = None,
             **kwargs) -> None:
 
         super().__init__(scope, id, **kwargs)
         index_document = index_document or "index.html"
         error_document = error_document or index_document
+        web_bucket_name = web_bucket_name or "webcontent"
         kwargs = get_params(locals())
         s3_kwargs = filter_kwargs(kwargs, "s3_")
         cf_kwargs = filter_kwargs(kwargs, "cf_")
@@ -69,7 +71,7 @@ class Website(Construct):
 
         self.bucket = Bucket(
             self,
-            "webcontent",
+            web_bucket_name,
             block_public_access=block_public_access,
             public_read_access=public_read_access,
             **s3_kwargs)

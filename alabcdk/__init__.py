@@ -24,6 +24,7 @@ from .cloudfront import Website  # noqa401
 from .stack import AlabStack  # noqa401
 from .ssm import StringParameter  # noqa401
 from .redshift import RedshiftServerless, RedshiftCluster # noqa401
+from .billing import BillingAlert # noqa401
 
 
 class Rule(aws_events.Rule):

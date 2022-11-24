@@ -190,6 +190,8 @@ class RedshiftServerless(RedshiftBase):
             aws_region: str,
             admin_password: str = None,
             base_capacity: int = 32,
+            max_query_execution_time: int = 360
+
             **kwargs):
         super().__init__(scope, id, vpc=vpc, admin_password=admin_password, **kwargs)
 
@@ -205,6 +207,12 @@ class RedshiftServerless(RedshiftBase):
 
         isolated_subnets = [subnet.subnet_id for subnet in self.vpc.isolated_subnets]
 
+        # Set max query execution time. Default to 360 sec
+        config_parameter_property = aws_redshiftserverless.CfnWorkgroup.ConfigParameterProperty(
+            parameter_key="max_query_execution_time",
+            parameter_value=str(max_query_execution_time)
+        )
+
         self.redshift_workgroup = aws_redshiftserverless.CfnWorkgroup(
             self,
             gen_name(self, "DataLakeRedshiftServerlessWorkgroup"),
@@ -215,6 +223,7 @@ class RedshiftServerless(RedshiftBase):
             publicly_accessible=False,
             security_group_ids=[self.security_group.security_group_id],
             subnet_ids=isolated_subnets,
+            config_parameters=[config_parameter_property]
         )
 
         self.redshift_workgroup.add_depends_on(self.redshift_namespace)

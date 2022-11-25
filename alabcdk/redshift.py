@@ -190,8 +190,7 @@ class RedshiftServerless(RedshiftBase):
             aws_region: str,
             admin_password: str = None,
             base_capacity: int = 32,
-            max_query_execution_time: int = 360
-
+            max_query_execution_time: int = 360,
             **kwargs):
         super().__init__(scope, id, vpc=vpc, admin_password=admin_password, **kwargs)
 

@@ -25,6 +25,7 @@ from .stack import AlabStack  # noqa401
 from .ssm import StringParameter  # noqa401
 from .redshift import RedshiftServerless, RedshiftCluster # noqa401
 from .billing import BillingAlert # noqa401
+from .backup import BackupPlan # noqa401
 
 
 class Rule(aws_events.Rule):

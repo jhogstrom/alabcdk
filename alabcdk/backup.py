@@ -82,7 +82,8 @@ class BackupPlan(aws_backup.BackupPlan):
         self.add_selection(
             f"{id}-backup-resource",
             resources=[aws_backup.BackupResource.from_arn(backup_resource_arn)],
-            role=self.role)
+            role=self.role,
+            allow_restores=True)
 
     def add_backup_rule(self, cron_expression: str, retentation_period_days: int) -> None:
         '''

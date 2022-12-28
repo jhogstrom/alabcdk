@@ -4,12 +4,13 @@ from aws_cdk import (
     aws_certificatemanager as acm,
     aws_lambda as lambda_,
     aws_route53 as route53,
+    aws_route53_targets as route53_targets,
     aws_apigatewayv2_alpha as api_gw2,
     aws_apigatewayv2_authorizers_alpha as _authorizers,
     aws_apigatewayv2_integrations_alpha as _api_integrations
 )
 from constructs import Construct
-from .utils import (gen_name, get_params, filter_kwargs, generate_output)
+from .utils import (gen_name, generate_output)
 
 
 class ApiDomain(Construct):
@@ -44,6 +45,17 @@ class ApiDomain(Construct):
             domain_name=domain_name,
             certificate=self.certificate
         )
+
+        route53.ARecord(
+            self,
+            gen_name(self, "alias_record"),
+            target=route53.RecordTarget.from_alias(route53_targets.ApiGatewayv2DomainProperties(
+                regional_domain_name=self.domain_name.regional_domain_name,
+                regional_hosted_zone_id=self.domain_name.regional_hosted_zone_id
+            )),
+            zone=self.hosted_zone,
+            record_name=domain_name,
+            comment=f"Alias record to map API gateway to custom domain name")
 
     def get_domain_mapping_options(self, mapping_key: Optional[str] = None) -> api_gw2.DomainMappingOptions:
         return api_gw2.DomainMappingOptions(domain_name=self.domain_name, mapping_key=mapping_key)

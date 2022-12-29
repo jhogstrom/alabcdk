@@ -87,11 +87,11 @@ class DataIngestionApi(Construct):
 
     def add_ingestion_path_new_data(self, path: str,
                                     integration_fn: lambda_.IFunction,
-                                    auth_name: str = 'authorizer',
-                                    auth_handler: lambda_.IFunction = None) -> None:
+                                    auth_name: Optional[str] = None,
+                                    auth_handler: Optional[lambda_.IFunction] = None) -> None:
         authorizer = api_gw2.HttpNoneAuthorizer
         if auth_handler is not None:
-            authorizer = _authorizers.HttpLambdaAuthorizer(f'authorizer-{path}',
+            authorizer = _authorizers.HttpLambdaAuthorizer(gen_name(self, "authorizer"),
                                                            authorizer_name=auth_name,
                                                            handler=auth_handler,
                                                            identity_source=['$request.header.Authorization'],

@@ -4,3 +4,7 @@ importlib-metadata
 importlib-resources
 zipp
 boto3
+aws_cdk.aws_apigatewayv2_alpha
+aws_cdk.aws_apigatewayv2_authorizers_alpha
+aws_cdk.aws_apigatewayv2_integrations_alpha
+

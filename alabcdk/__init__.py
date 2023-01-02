@@ -26,7 +26,7 @@ from .ssm import StringParameter  # noqa401
 from .redshift import RedshiftServerless, RedshiftCluster # noqa401
 from .billing import BillingAlert # noqa401
 from .backup import BackupPlan # noqa401
-
+from .data_ingestion_api import ApiDomain, DataIngestionApi # noqa401
 
 class Rule(aws_events.Rule):
     def __init__(

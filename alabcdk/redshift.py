@@ -4,6 +4,8 @@ from constructs import Construct
 import aws_cdk as cdk
 from aws_cdk import (
     aws_ssm,
+    SecretValue,
+    aws_secretsmanager,
     aws_ec2,
     aws_iam,
     aws_redshift,
@@ -42,17 +44,22 @@ class RedshiftBase(Construct):
 
         self.security_group = self.define_security_group()
 
-        # Cluster credentials
-        self.admin_password = admin_password or secrets.token_urlsafe(30)
-        cluster_admin_password_ssm = aws_ssm.StringParameter(
-            self,
-            gen_name(self, "DataLakeClusterAdminPassword"),
-            allowed_pattern=".*",
-            description="DataLakeClusterAdminPassword",
-            parameter_name="DataLakeClusterAdminPassword",
-            string_value=self.admin_password,
-        )
-        cluster_admin_password_ssm.apply_removal_policy(cdk.RemovalPolicy.DESTROY)
+        if not SecretValue.is_secret_value(admin_password):
+            cluster_admin_password_secret = aws_secretsmanager.Secret(
+                self,
+                gen_name(self, "DataLakeClusterAdminPasswordSecret"),
+                description="DataLakeClusterAdminPasswordSecret",
+                removal_policy=cdk.RemovalPolicy.DESTROY,
+                secret_name="DataLakeClusterAdminPasswordSecret",
+                secret_string_value=f"{'{'}admin_password:{admin_password}{'}'}")
+
+            cluster_admin_password_secret.add_rotation_schedule(
+                "RotationScheduleDataLakeClusterAdminPasswordSecret",
+                hosted_rotation=aws_secretsmanager.HostedRotation.redshift_single_user()
+            )
+
+        self.password_secret_name = "DataLakeClusterAdminPasswordSecret"
+        self.password_secret_key = "admin_password"
 
     def _define_vpc(self, vpc: aws_ec2.Vpc = None):
         if vpc is not None:

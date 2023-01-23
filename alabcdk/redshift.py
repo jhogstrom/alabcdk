@@ -4,6 +4,8 @@ from constructs import Construct
 import aws_cdk as cdk
 from aws_cdk import (
     aws_ssm,
+    SecretValue,
+    aws_secretsmanager,
     aws_ec2,
     aws_iam,
     aws_redshift,
@@ -11,7 +13,7 @@ from aws_cdk import (
 )
 from typing import List
 
-from .utils import (gen_name)
+from .utils import (gen_name, generate_output)
 from .aws_cloud_resources import (redshift_port_number)
 
 
@@ -42,17 +44,30 @@ class RedshiftBase(Construct):
 
         self.security_group = self.define_security_group()
 
-        # Cluster credentials
-        self.admin_password = admin_password or secrets.token_urlsafe(30)
-        cluster_admin_password_ssm = aws_ssm.StringParameter(
+        gen_secret = aws_secretsmanager.SecretStringGenerator(secret_string_template="{}",
+                                                              generate_string_key="admin_password")
+        set_secret = {
+            "admin_password": SecretValue.unsafe_plain_text(admin_password)
+        }
+        cluster_admin_password_secret = aws_secretsmanager.Secret(
             self,
-            gen_name(self, "DataLakeClusterAdminPassword"),
-            allowed_pattern=".*",
-            description="DataLakeClusterAdminPassword",
-            parameter_name="DataLakeClusterAdminPassword",
-            string_value=self.admin_password,
+            gen_name(self, "DataLakeClusterAdminPasswordSecret"),
+            description="DataLakeClusterAdminPasswordSecret",
+            removal_policy=cdk.RemovalPolicy.DESTROY,
+            secret_name="DataLakeClusterAdminPasswordSecret",
+            generate_secret_string=gen_secret if admin_password is None else None,
+            secret_object_value=set_secret if admin_password is not None else None)
+
+        cluster_admin_password_secret.add_rotation_schedule(
+            "RotationScheduleDataLakeClusterAdminPasswordSecret",
+            hosted_rotation=aws_secretsmanager.HostedRotation.redshift_single_user()
         )
-        cluster_admin_password_ssm.apply_removal_policy(cdk.RemovalPolicy.DESTROY)
+
+        self.password_secret_name = "DataLakeClusterAdminPasswordSecret"
+        self.password_secret_key = "admin_password"
+
+        generate_output(self, "password_secret_name", self.password_secret_name)
+        generate_output(self, "password_secret_key", self.password_secret_key)
 
     def _define_vpc(self, vpc: aws_ec2.Vpc = None):
         if vpc is not None:
@@ -144,6 +159,9 @@ class RedshiftCluster(RedshiftBase):
         )
         redshift_cluster_subnet_group.apply_removal_policy(cdk.RemovalPolicy.DESTROY)
 
+        master_password_secret = SecretValue.secrets_manager(self.password_secret_name,
+                                                             json_field=self.password_secret_key)
+
         self.cluster = aws_redshift.CfnCluster(
             self,
             gen_name(self, "DataLakeRedshiftCluster"),
@@ -151,7 +169,7 @@ class RedshiftCluster(RedshiftBase):
             # number_of_nodes=1,
             db_name=db_name,
             master_username=master_username,
-            master_user_password=self.admin_password,
+            master_user_password=master_password_secret.to_string(),
             iam_roles=[self.redshift_role.role_arn],
             node_type=ec2_instance_type,
             cluster_subnet_group_name=redshift_cluster_subnet_group.ref,
@@ -194,12 +212,14 @@ class RedshiftServerless(RedshiftBase):
             **kwargs):
         super().__init__(scope, id, vpc=vpc, admin_password=admin_password, **kwargs)
 
+        master_password_secret = SecretValue.secrets_manager(self.password_secret_name,
+                                                             json_field=self.password_secret_key)
         self.redshift_namespace = aws_redshiftserverless.CfnNamespace(
             self,
             gen_name(self, "DataLakeRedshiftServerlessNamespace"),
             namespace_name="data-lake-namespace",
             admin_username=master_username,
-            admin_user_password=self.admin_password,
+            admin_user_password=master_password_secret.to_string(),
             db_name=db_name,
             iam_roles=[self.redshift_role.role_arn],
         )

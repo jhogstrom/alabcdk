@@ -65,6 +65,7 @@ class RedshiftBase(Construct):
 
         self.password_secret_name = "DataLakeClusterAdminPasswordSecret"
         self.password_secret_key = "admin_password"
+        self.cluster_admin_password_secret = cluster_admin_password_secret
 
         generate_output(self, "password_secret_name", self.password_secret_name)
         generate_output(self, "password_secret_key", self.password_secret_key)

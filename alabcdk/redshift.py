@@ -1,4 +1,4 @@
-import secrets
+import json
 from constructs import Construct
 
 import aws_cdk as cdk
@@ -24,6 +24,7 @@ class RedshiftBase(Construct):
             id: str,
             *,
             vpc: aws_ec2.Vpc = None,
+            master_username: str,
             admin_password: str = None,
             **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
@@ -44,31 +45,42 @@ class RedshiftBase(Construct):
 
         self.security_group = self.define_security_group()
 
-        gen_secret = aws_secretsmanager.SecretStringGenerator(secret_string_template="{}",
-                                                              generate_string_key="admin_password")
-        set_secret = {
-            "admin_password": SecretValue.unsafe_plain_text(admin_password)
-        }
-        cluster_admin_password_secret = aws_secretsmanager.Secret(
-            self,
-            gen_name(self, "DataLakeClusterAdminPasswordSecret"),
-            description="DataLakeClusterAdminPasswordSecret",
-            removal_policy=cdk.RemovalPolicy.DESTROY,
-            secret_name="DataLakeClusterAdminPasswordSecret",
-            generate_secret_string=gen_secret if admin_password is None else None,
-            secret_object_value=set_secret if admin_password is not None else None)
+        secret_name = "DataLakeClusterAdminPasswordSecret"
+        self.cluster_secret = self.define_secret(name=secret_name,
+                                                 username=master_username,
+                                                 password=admin_password)
+        self.password_secret_name = secret_name
+        self.password_secret_key = "password"
+        generate_output(self, "password_secret_name", self.password_secret_name)
+        generate_output(self, "password_secret_key", self.password_secret_key)
 
-        cluster_admin_password_secret.add_rotation_schedule(
+
+    def define_secret(self, *, name: str, host: str = "no-host", username: str, password: str = None) -> None:
+        secret_structure = {
+            "engine": "redshift",
+            "host": host,
+            "username": username,
+        }
+        gen_secret = aws_secretsmanager.SecretStringGenerator(secret_string_template=json.dumps(secret_structure),
+                                                              generate_string_key="password")
+        set_secret = {
+            "password": SecretValue.unsafe_plain_text(password)
+        }
+        cluster_secret = aws_secretsmanager.Secret(
+            self,
+            gen_name(self, name),
+            description=f"Redshift Cluster secret",
+            removal_policy=cdk.RemovalPolicy.DESTROY,
+            secret_name=name,
+            generate_secret_string=gen_secret if password is None else None,
+            secret_object_value=set_secret if password is not None else None)
+
+        cluster_secret.add_rotation_schedule(
             "RotationScheduleDataLakeClusterAdminPasswordSecret",
             hosted_rotation=aws_secretsmanager.HostedRotation.redshift_single_user()
         )
+        return cluster_secret
 
-        self.password_secret_name = "DataLakeClusterAdminPasswordSecret"
-        self.password_secret_key = "admin_password"
-        self.cluster_admin_password_secret = cluster_admin_password_secret
-
-        generate_output(self, "password_secret_name", self.password_secret_name)
-        generate_output(self, "password_secret_key", self.password_secret_key)
 
     def _define_vpc(self, vpc: aws_ec2.Vpc = None):
         if vpc is not None:
@@ -147,7 +159,7 @@ class RedshiftCluster(RedshiftBase):
             master_username: str,
             admin_password: str = None,
             **kwargs):
-        super().__init__(scope, id, vpc=vpc, admin_password=admin_password, **kwargs)
+        super().__init__(scope, id, vpc=vpc, master_username=master_username, admin_password=admin_password, **kwargs)
 
         # Subnet Group for Cluster
         redshift_cluster_subnet_group = aws_redshift.CfnClusterSubnetGroup(
@@ -211,7 +223,7 @@ class RedshiftServerless(RedshiftBase):
             base_capacity: int = 32,
             max_query_execution_time: int = 360,
             **kwargs):
-        super().__init__(scope, id, vpc=vpc, admin_password=admin_password, **kwargs)
+        super().__init__(scope, id, vpc=vpc, master_username=master_username, admin_password=admin_password, **kwargs)
 
         master_password_secret = SecretValue.secrets_manager(self.password_secret_name,
                                                              json_field=self.password_secret_key)

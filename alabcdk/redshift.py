@@ -190,6 +190,7 @@ class RedshiftCluster(RedshiftBase):
             publicly_accessible=True,
         )
         self.cluster.apply_removal_policy(cdk.RemovalPolicy.DESTROY)
+        self.cluster.add_depends_on(self.cluster_secret)
 
 
 class RedshiftServerless(RedshiftBase):
@@ -236,6 +237,7 @@ class RedshiftServerless(RedshiftBase):
             db_name=db_name,
             iam_roles=[self.redshift_role.role_arn],
         )
+        self.redshift_namespace.add_depends_on(self.cluster_secret)
 
         isolated_subnets = [subnet.subnet_id for subnet in self.vpc.isolated_subnets]
 

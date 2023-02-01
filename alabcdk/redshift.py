@@ -55,7 +55,11 @@ class RedshiftBase(Construct):
         generate_output(self, "password_secret_key", self.password_secret_key)
 
 
-    def define_secret(self, *, name: str, host: str = "no-host", username: str, password: str = None) -> None:
+    def define_secret(self, *,
+                      name: str,
+                      host: str = "no-host",
+                      username: str,
+                      password: str = None) -> aws_secretsmanager.Secret:
         secret_structure = {
             "engine": "redshift",
             "host": host,
@@ -74,11 +78,6 @@ class RedshiftBase(Construct):
             secret_name=name,
             generate_secret_string=gen_secret if password is None else None,
             secret_object_value=set_secret if password is not None else None)
-
-        cluster_secret.add_rotation_schedule(
-            "RotationScheduleDataLakeClusterAdminPasswordSecret",
-            hosted_rotation=aws_secretsmanager.HostedRotation.redshift_single_user()
-        )
         return cluster_secret
 
 
@@ -190,7 +189,7 @@ class RedshiftCluster(RedshiftBase):
             publicly_accessible=True,
         )
         self.cluster.apply_removal_policy(cdk.RemovalPolicy.DESTROY)
-        self.cluster.add_depends_on(self.cluster_secret)
+        self.cluster.add_depends_on(self.cluster_secret.node.default_child)
 
 
 class RedshiftServerless(RedshiftBase):

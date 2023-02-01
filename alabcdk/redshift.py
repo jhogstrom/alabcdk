@@ -237,7 +237,7 @@ class RedshiftServerless(RedshiftBase):
             db_name=db_name,
             iam_roles=[self.redshift_role.role_arn],
         )
-        self.redshift_namespace.add_depends_on(self.cluster_secret)
+        self.redshift_namespace.add_depends_on(self.cluster_secret.node.default_child)
 
         isolated_subnets = [subnet.subnet_id for subnet in self.vpc.isolated_subnets]
 

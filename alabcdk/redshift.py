@@ -68,9 +68,9 @@ class RedshiftBase(Construct):
         gen_secret = aws_secretsmanager.SecretStringGenerator(secret_string_template=json.dumps(secret_structure),
                                                               generate_string_key="password")
         set_secret = {
-            "engine": "redshift",
-            "host": host,
-            "username": username,
+            "engine": SecretValue.unsafe_plain_text("redshift"),
+            "host": SecretValue.unsafe_plain_text(host),
+            "username": SecretValue.unsafe_plain_text(username),
             "password": SecretValue.unsafe_plain_text(password)
         }
         cluster_secret = aws_secretsmanager.Secret(
@@ -80,7 +80,7 @@ class RedshiftBase(Construct):
             removal_policy=cdk.RemovalPolicy.DESTROY,
             secret_name=name,
             generate_secret_string=gen_secret if password is None else None,
-            secret_object_value={**secret_structure, **set_secret} if password is not None else None)
+            secret_object_value=set_secret if password is not None else None)
         return cluster_secret
 
 

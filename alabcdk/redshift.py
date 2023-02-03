@@ -68,6 +68,9 @@ class RedshiftBase(Construct):
         gen_secret = aws_secretsmanager.SecretStringGenerator(secret_string_template=json.dumps(secret_structure),
                                                               generate_string_key="password")
         set_secret = {
+            "engine": "redshift",
+            "host": host,
+            "username": username,
             "password": SecretValue.unsafe_plain_text(password)
         }
         cluster_secret = aws_secretsmanager.Secret(

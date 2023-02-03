@@ -77,7 +77,7 @@ class RedshiftBase(Construct):
             removal_policy=cdk.RemovalPolicy.DESTROY,
             secret_name=name,
             generate_secret_string=gen_secret if password is None else None,
-            secret_object_value=set_secret if password is not None else None)
+            secret_object_value={**secret_structure, **set_secret} if password is not None else None)
         return cluster_secret
 
 

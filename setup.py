@@ -13,7 +13,7 @@ with open(path.join(here, "requirements.txt")) as f:
 
 setup(
     name='alabcdk',
-    version='1.2.11',
+    version='1.2.12',
     description='Useful CDK constructs',
     url='https://github.com/aditrologistics/alabcdk.git',
     author='Jesper Högström',

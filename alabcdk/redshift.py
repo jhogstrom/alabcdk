@@ -1,32 +1,32 @@
 import json
-from constructs import Construct
+from typing import List
 
 import aws_cdk as cdk
 from aws_cdk import (
-    aws_ssm,
     SecretValue,
-    aws_secretsmanager,
     aws_ec2,
     aws_iam,
     aws_redshift,
-    aws_redshiftserverless
+    aws_redshiftserverless,
+    aws_secretsmanager,
 )
-from typing import List
+from constructs import Construct
 
-from .utils import (gen_name, generate_output)
-from .aws_cloud_resources import (redshift_port_number)
+from .aws_cloud_resources import redshift_port_number
+from .utils import gen_name, generate_output
 
 
 class RedshiftBase(Construct):
     def __init__(
-            self,
-            scope: Construct,
-            id: str,
-            *,
-            vpc: aws_ec2.Vpc = None,
-            master_username: str,
-            admin_password: str = None,
-            **kwargs) -> None:
+        self,
+        scope: Construct,
+        id: str,
+        *,
+        vpc: aws_ec2.Vpc = None,
+        master_username: str,
+        admin_password: str = None,
+        **kwargs,
+    ) -> None:
         super().__init__(scope, id, **kwargs)
 
         # Redshift IAM Role
@@ -35,9 +35,15 @@ class RedshiftBase(Construct):
             gen_name(self, "DataLakeRedshiftClusterRole"),
             assumed_by=aws_iam.ServicePrincipal("redshift.amazonaws.com"),
             managed_policies=[
-                aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3ReadOnlyAccess"),
-                aws_iam.ManagedPolicy.from_aws_managed_policy_name("AWSGlueConsoleFullAccess"),
-                aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonAthenaFullAccess"),
+                aws_iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "AmazonS3ReadOnlyAccess"
+                ),
+                aws_iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "AWSGlueConsoleFullAccess"
+                ),
+                aws_iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "AmazonAthenaFullAccess"
+                ),
             ],
         )
         self.redshift_role.apply_removal_policy(cdk.RemovalPolicy.DESTROY)
@@ -46,43 +52,42 @@ class RedshiftBase(Construct):
         self.security_group = self.define_security_group()
 
         secret_name = "DataLakeClusterAdminPasswordSecret"
-        self.cluster_secret = self.define_secret(name=secret_name,
-                                                 username=master_username,
-                                                 password=admin_password)
+        self.cluster_secret = self.define_secret(
+            name=secret_name, username=master_username, password=admin_password
+        )
         self.password_secret_name = secret_name
         self.password_secret_key = "password"
         generate_output(self, "password_secret_name", self.password_secret_name)
         generate_output(self, "password_secret_key", self.password_secret_key)
 
-
-    def define_secret(self, *,
-                      name: str,
-                      host: str = "no-host",
-                      username: str,
-                      password: str = None) -> aws_secretsmanager.Secret:
+    def define_secret(
+        self, *, name: str, host: str = "no-host", username: str, password: str = None
+    ) -> aws_secretsmanager.Secret:
         secret_structure = {
             "engine": "redshift",
             "host": host,
             "username": username,
         }
-        gen_secret = aws_secretsmanager.SecretStringGenerator(secret_string_template=json.dumps(secret_structure),
-                                                              generate_string_key="password")
+        gen_secret = aws_secretsmanager.SecretStringGenerator(
+            secret_string_template=json.dumps(secret_structure),
+            generate_string_key="password",
+        )
         set_secret = {
             "engine": SecretValue.unsafe_plain_text("redshift"),
             "host": SecretValue.unsafe_plain_text(host),
             "username": SecretValue.unsafe_plain_text(username),
-            "password": SecretValue.unsafe_plain_text(password)
+            "password": SecretValue.unsafe_plain_text(password),
         }
         cluster_secret = aws_secretsmanager.Secret(
             self,
             gen_name(self, name),
-            description=f"Redshift Cluster secret",
+            description="Redshift Cluster secret",
             removal_policy=cdk.RemovalPolicy.DESTROY,
             secret_name=name,
             generate_secret_string=gen_secret if password is None else None,
-            secret_object_value=set_secret if password is not None else None)
+            secret_object_value=set_secret if password is not None else None,
+        )
         return cluster_secret
-
 
     def _define_vpc(self, vpc: aws_ec2.Vpc = None):
         if vpc is not None:
@@ -151,17 +156,25 @@ class RedshiftCluster(RedshiftBase):
         )
 
     def __init__(
-            self,
-            scope: Construct,
-            id: str,
-            *,
-            vpc: aws_ec2.Vpc = None,
-            ec2_instance_type: str,
-            db_name: str,
-            master_username: str,
-            admin_password: str = None,
-            **kwargs):
-        super().__init__(scope, id, vpc=vpc, master_username=master_username, admin_password=admin_password, **kwargs)
+        self,
+        scope: Construct,
+        id: str,
+        *,
+        vpc: aws_ec2.Vpc = None,
+        ec2_instance_type: str,
+        db_name: str,
+        master_username: str,
+        admin_password: str = None,
+        **kwargs,
+    ):
+        super().__init__(
+            scope,
+            id,
+            vpc=vpc,
+            master_username=master_username,
+            admin_password=admin_password,
+            **kwargs,
+        )
 
         # Subnet Group for Cluster
         redshift_cluster_subnet_group = aws_redshift.CfnClusterSubnetGroup(
@@ -174,8 +187,9 @@ class RedshiftCluster(RedshiftBase):
         )
         redshift_cluster_subnet_group.apply_removal_policy(cdk.RemovalPolicy.DESTROY)
 
-        master_password_secret = SecretValue.secrets_manager(self.password_secret_name,
-                                                             json_field=self.password_secret_key)
+        master_password_secret = SecretValue.secrets_manager(
+            self.password_secret_name, json_field=self.password_secret_key
+        )
 
         self.cluster = aws_redshift.CfnCluster(
             self,
@@ -208,28 +222,39 @@ class RedshiftServerless(RedshiftBase):
             enable_dns_hostnames=True,
             subnet_configuration=[
                 aws_ec2.SubnetConfiguration(
-                    name="private", cidr_mask=24, subnet_type=aws_ec2.SubnetType.PRIVATE_ISOLATED
+                    name="private",
+                    cidr_mask=24,
+                    subnet_type=aws_ec2.SubnetType.PRIVATE_ISOLATED,
                 ),
-            ]
+            ],
         )
 
     def __init__(
-            self,
-            scope: Construct,
-            id: str,
-            *,
-            vpc: aws_ec2.Vpc = None,
-            db_name: str,
-            master_username: str,
-            aws_region: str,
-            admin_password: str = None,
-            base_capacity: int = 32,
-            max_query_execution_time: int = 360,
-            **kwargs):
-        super().__init__(scope, id, vpc=vpc, master_username=master_username, admin_password=admin_password, **kwargs)
+        self,
+        scope: Construct,
+        id: str,
+        *,
+        vpc: aws_ec2.Vpc = None,
+        db_name: str,
+        master_username: str,
+        aws_region: str,
+        admin_password: str = None,
+        base_capacity: int = 32,
+        max_query_execution_time: int = 360,
+        **kwargs,
+    ):
+        super().__init__(
+            scope,
+            id,
+            vpc=vpc,
+            master_username=master_username,
+            admin_password=admin_password,
+            **kwargs,
+        )
 
-        master_password_secret = SecretValue.secrets_manager(self.password_secret_name,
-                                                             json_field=self.password_secret_key)
+        master_password_secret = SecretValue.secrets_manager(
+            self.password_secret_name, json_field=self.password_secret_key
+        )
         self.redshift_namespace = aws_redshiftserverless.CfnNamespace(
             self,
             gen_name(self, "DataLakeRedshiftServerlessNamespace"),
@@ -244,9 +269,11 @@ class RedshiftServerless(RedshiftBase):
         isolated_subnets = [subnet.subnet_id for subnet in self.vpc.isolated_subnets]
 
         # Set max query execution time. Default to 360 sec
-        config_parameter_property = aws_redshiftserverless.CfnWorkgroup.ConfigParameterProperty(
-            parameter_key="max_query_execution_time",
-            parameter_value=str(max_query_execution_time)
+        config_parameter_property = (
+            aws_redshiftserverless.CfnWorkgroup.ConfigParameterProperty(
+                parameter_key="max_query_execution_time",
+                parameter_value=str(max_query_execution_time),
+            )
         )
 
         self.redshift_workgroup = aws_redshiftserverless.CfnWorkgroup(
@@ -259,7 +286,7 @@ class RedshiftServerless(RedshiftBase):
             publicly_accessible=False,
             security_group_ids=[self.security_group.security_group_id],
             subnet_ids=isolated_subnets,
-            config_parameters=[config_parameter_property]
+            config_parameters=[config_parameter_property],
         )
 
         self.redshift_workgroup.add_depends_on(self.redshift_namespace)

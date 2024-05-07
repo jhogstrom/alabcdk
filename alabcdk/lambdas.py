@@ -1,25 +1,20 @@
-import pathlib
+import glob
 import hashlib
 import os
-import tempfile
-import subprocess
+import pathlib
 import shutil
-import glob
+import subprocess
+import tempfile
 from typing import List, Optional
+
+import aws_cdk as cdk
+from aws_cdk import Duration, aws_lambda, aws_logs
 from constructs import Construct
-from aws_cdk import (
-    Duration,
-    aws_lambda,
-    aws_logs
-)
-from .utils import (gen_name, get_params, generate_output, setup_logger)
+
+from .utils import gen_name, generate_output, get_params, setup_logger
 
 logger = setup_logger(name="alabcdk")
-_stage_to_loglevel = {
-    "PROD": "INFO",
-    "TEST": "DEBUG",
-    "DEV": "DEBUG"
-}
+_stage_to_loglevel = {"PROD": "INFO", "TEST": "DEBUG", "DEV": "DEBUG"}
 
 
 _DEFAULT_LAMBDA_LOGLEVEL = "DEBUG"
@@ -32,19 +27,27 @@ class Function(aws_lambda.Function):
             stage = self.stack.stage
         return _stage_to_loglevel.get(stage, _DEFAULT_LAMBDA_LOGLEVEL)
 
-    def __init__(
-            self,
-            scope: Construct,
-            id: str,
-            **kwargs):
+    def __init__(self, scope: Construct, id: str, **kwargs):
         kwargs = get_params(locals())
 
-        kwargs.setdefault('function_name', gen_name(scope, id))
+        kwargs.setdefault("function_name", gen_name(scope, id))
         kwargs.setdefault("handler", f"{id}.main")
         kwargs.setdefault("code", aws_lambda.Code.from_asset(id, exclude=[".env*"]))
-        kwargs.setdefault("runtime", aws_lambda.Runtime.PYTHON_3_8)
+        kwargs.setdefault("runtime", aws_lambda.Runtime.PYTHON_3_12)
         kwargs.setdefault("timeout", Duration.seconds(3))
         kwargs.setdefault("log_retention", aws_logs.RetentionDays.FIVE_DAYS)
+
+        log_group = aws_logs.LogGroup(
+            scope,
+            f"{id}LogGroup",
+            log_group_name=f"/aws/lambda/{kwargs['function_name']}-log",
+            retention=kwargs["log_retention"],
+            removal_policy=kwargs.get("removal_policy", cdk.RemovalPolicy.DESTROY),
+        )
+
+        kwargs["log_group"] = log_group
+
+        kwargs.pop("log_retention")
 
         super().__init__(scope, id, **kwargs)
 
@@ -53,7 +56,9 @@ class Function(aws_lambda.Function):
 
         self.add_environment("LOGLEVEL", self._loglevel_for_stage())
 
-    def add_environment(self, key: str, value: str, *, remove_in_edge: Optional[bool] = None) -> "Function":
+    def add_environment(
+        self, key: str, value: str, *, remove_in_edge: Optional[bool] = None
+    ) -> "Function":
         generate_output(self, key, value)
         return super().add_environment(key, value, remove_in_edge=remove_in_edge)
 
@@ -85,14 +90,16 @@ class PipLayers(Construct):
         return tempname
 
     def __init__(
-            self,
-            scope,
-            id, *,
-            layers: dict,
-            compatible_runtimes=None,
-            unpack_dir: str = None,
-            force_exclude_packages: List[str] = None,
-            **kwargs):
+        self,
+        scope,
+        id,
+        *,
+        layers: dict,
+        compatible_runtimes=None,
+        unpack_dir: str = None,
+        force_exclude_packages: List[str] = None,
+        **kwargs,
+    ):
         """
         Create layer using the information in the layers parameter.
 
@@ -143,8 +150,9 @@ class PipLayers(Construct):
         super().__init__(scope, id)
         if not compatible_runtimes:
             compatible_runtimes = [
-                aws_lambda.Runtime.PYTHON_3_8,
-                aws_lambda.Runtime.PYTHON_3_9]
+                aws_lambda.Runtime.PYTHON_3_11,
+                aws_lambda.Runtime.PYTHON_3_12,
+            ]
 
         if unpack_dir:
             unpack_dir = pathlib.Path(unpack_dir)
@@ -164,7 +172,9 @@ class PipLayers(Construct):
         for layer_id, requirements_file in layers.items():
             logger.info(f"Creating layer '{layer_id}'.")
             if not os.path.exists(requirements_file):
-                raise FileExistsError(f"Layer {layer_id}: '{requirements_file}' does not exist.")
+                raise FileExistsError(
+                    f"Layer {layer_id}: '{requirements_file}' does not exist."
+                )
 
             layer_unpack_dir = unpack_dir / layer_id
             unpack_to_dir = layer_unpack_dir / "python"
@@ -176,7 +186,10 @@ class PipLayers(Construct):
                     prev_md5 = f.read()
 
             if req_md5 != prev_md5:
-                preexisting_packages = preexisting_packages or self.get_preinstalled_packages(compatible_runtimes)
+                preexisting_packages = (
+                    preexisting_packages
+                    or self.get_preinstalled_packages(compatible_runtimes)
+                )
 
                 tempname = self.cleaned_requirements(requirements_file)
 
@@ -184,7 +197,7 @@ class PipLayers(Construct):
                 layer_unpack_dir.mkdir(parents=True, exist_ok=True)
                 # Extracting to a subdirectory 'python' as per
                 # https://docs.aws.amazon.com/lambda/latest/dg/configuration-layers.html
-                pipcommand = f'pip install -r {tempname} -t {unpack_to_dir} --quiet'
+                pipcommand = f"pip install -r {tempname} -t {unpack_to_dir} --platform manylinux2014_x86_64 --only-binary=:all: --quiet"  # noqa e501
                 logger.debug(pipcommand)
                 logger.debug(open(tempname).readlines())
 
@@ -195,8 +208,8 @@ class PipLayers(Construct):
                     raise
 
                 self.remove_preinstalled_packages(
-                    preexisting_packages=preexisting_packages,
-                    root_dir=unpack_to_dir)
+                    preexisting_packages=preexisting_packages, root_dir=unpack_to_dir
+                )
 
                 with open(layer_unpack_dir / "md5sum", "w") as f:
                     f.write(req_md5)
@@ -215,7 +228,8 @@ class PipLayers(Construct):
                 code=code,
                 compatible_runtimes=compatible_runtimes,
                 layer_version_name=gen_name(scope, version_id),
-                **kwargs)
+                **kwargs,
+            )
 
             self.idlayers[layer_id] = layer
             self.layers.append(layer)
@@ -234,7 +248,9 @@ class PipLayers(Construct):
                 total_size += os.path.getsize(fp)
         return total_size
 
-    def remove_preinstalled_packages(self, *, preexisting_packages: dict, root_dir: str):
+    def remove_preinstalled_packages(
+        self, *, preexisting_packages: dict, root_dir: str
+    ):
         """
         Remove directories containing pre-existing packages.
 
@@ -257,22 +273,34 @@ class PipLayers(Construct):
 
             if count == len(preexisting_packages) or d in self.force_exclude_packages:
                 fullname = os.path.join(root_dir, d)
-                shutil.rmtree(fullname)
+                try:
+                    shutil.rmtree(fullname)
+                except FileNotFoundError:
+                    logger.warning(f"Could not delete {fullname}.")
+                except NotADirectoryError:
+                    logger.warning(f"Could not delete {fullname}.")
                 # While we're at it, delete the dist-directory
                 auxdirs = glob.glob(f"{fullname}-*")
                 for auxdir in auxdirs:
                     logger.debug(f"Deleting {auxdir}")
-                    shutil.rmtree(auxdir)
+                    try:
+                        shutil.rmtree(auxdir)
+                    except FileNotFoundError:
+                        logger.warning(f"Could not delete {auxdir}.")
                 if d in self.force_exclude_packages:
                     reason = "excluded by request"
                 else:
                     reason = "pre-installed"
                 logger.info(f"Removing redundant package {d} ({reason}).")
             else:
-                logger.debug(f"Keeping {d}: preinstalled in {count}/{len(preexisting_packages)} runtimes.")
+                logger.debug(
+                    f"Keeping {d}: preinstalled in {count}/{len(preexisting_packages)} runtimes."
+                )
         newsize = self.get_dir_size(root_dir)
         sizediff = orgsize - newsize
-        logger.info(f"Layer size reduced by {sizediff//(1024*1024)}MB ({100*sizediff/orgsize:.0f}%).")
+        logger.info(
+            f"Layer size reduced by {sizediff//(1024*1024)}MB ({100*sizediff/orgsize:.0f}%)."
+        )
         logger.info(f"Final layer size {(orgsize - sizediff)//(1024*1024)}MB")
 
     def get_preinstalled_packages(self, runtimes: list) -> dict:
@@ -286,8 +314,12 @@ class PipLayers(Construct):
         for runtime in runtimes:
             preinstalled = os.path.join(curdir, f"preinstalled_{runtime.name}.txt")
             if os.path.exists(preinstalled):
-                res[runtime.name] = [_.strip() for _ in open(preinstalled).readlines() if _.strip() != ""]
-                logger.info(f"Loading and comparing with {len(res[runtime.name])} packages in '{preinstalled}'.")
+                res[runtime.name] = [
+                    _.strip() for _ in open(preinstalled).readlines() if _.strip() != ""
+                ]
+                logger.info(
+                    f"Loading and comparing with {len(res[runtime.name])} packages in '{preinstalled}'."
+                )
                 # for _ in res[runtime.name]:
                 #     logger.debug(f">> {runtime.name}: {_}")
             else:
